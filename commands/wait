@@ -1,11 +1,11 @@
 #!/usr/bin/env -S uv run python
 """
-commands/wait path/to/tdata PATTERN [-t 30/--timeout=30] [-c/--conversation_id=] [-m/--message=]
+commands/wait [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] PATTERN [-t 30/--timeout=30] [-c/--conversation_id=] [-m/--message=]
 
-Connects via libs/dgram and awaits a fresh message matching PATTERN, for no
-longer than timeout seconds. When both conversation_id and message are
-supplied, it first sends message to conversation_id and awaits the reply
-there; otherwise it awaits a match in any dialogue whatsoever.
+Awaits a fresh message matching PATTERN, for no longer than timeout
+seconds. When both conversation_id and message are supplied, it first
+sends message to conversation_id and awaits the reply there; otherwise it
+awaits a match in any dialogue whatsoever.
 """
 
 import sys
@@ -15,52 +15,30 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import argparse
 import asyncio
-import re
-import sys
 
-from telethon import events
-
-from libs.dgram import get_client, resolve_target
+from libs.cli import add_client_arguments, client_kwargs
+from methods.wait import wait_for_message
 
 
 async def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    add_client_arguments(parser)
     parser.add_argument("pattern", help="Regular expression to search for within the message text")
     parser.add_argument("-t", "--timeout", type=float, default=30, help="Waiting timeout, in seconds")
     parser.add_argument("-c", "--conversation_id", default=None, help="@user/@group/id in which to await/send")
     parser.add_argument("-m", "--message", default=None, help="Message to send before waiting")
     args = parser.parse_args()
 
-    client = await get_client(args.tdata_path)
-    found: "asyncio.Future" = asyncio.get_event_loop().create_future()
-
-    entity = None
-    if args.conversation_id is not None:
-        entity = await client.get_entity(resolve_target(args.conversation_id))
-
-    event_kwargs = {"pattern": re.compile(args.pattern, re.DOTALL).search}
-    if entity is not None:
-        event_kwargs["chats"] = entity
-
-    @client.on(events.NewMessage(**event_kwargs))
-    async def handler(event):
-        if not found.done():
-            found.set_result(event.message)
-
     try:
-        if entity is not None and args.message is not None:
-            await client.send_message(entity, args.message)
-
-        message = await asyncio.wait_for(found, timeout=args.timeout)
+        message = await wait_for_message(
+            args.pattern, args.timeout, args.conversation_id, args.message, **client_kwargs(args)
+        )
     except asyncio.TimeoutError:
         print(f"No message matching pattern {args.pattern!r} was received within {args.timeout} s.", file=sys.stderr)
         return 1
-    else:
-        print(f"[{message.date}] {message.text}")
-        return 0
-    finally:
-        await client.disconnect()
+
+    print(f"[{message.date}] {message.text}")
+    return 0
 
 
 if __name__ == "__main__":

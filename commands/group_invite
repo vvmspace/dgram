@@ -1,8 +1,8 @@
 #!/usr/bin/env -S uv run python
 """
-commands/group_invite path/to/tdata @username/id @groupname/id
+commands/group_invite [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] @username/id @groupname/id
 
-Connects via libs/dgram and invites a user into the given group/channel.
+Invites a user into the given group/channel.
 """
 
 import sys
@@ -13,26 +13,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from telethon.tl.functions.channels import InviteToChannelRequest
-
-from libs.dgram import get_client, resolve_target
+from libs.cli import add_client_arguments, client_kwargs
+from methods.group_invite import invite
 
 
 async def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    add_client_arguments(parser)
     parser.add_argument("user", help="@username or the id of the user")
     parser.add_argument("group", help="@groupname or the id of the group")
     args = parser.parse_args()
 
-    client = await get_client(args.tdata_path)
-    try:
-        user_entity = await client.get_entity(resolve_target(args.user))
-        group_entity = await client.get_entity(resolve_target(args.group))
-        await client(InviteToChannelRequest(group_entity, [user_entity]))
-        print(f"Added {args.user} to {args.group}")
-    finally:
-        await client.disconnect()
+    await invite(args.user, args.group, **client_kwargs(args))
+    print(f"Added {args.user} to {args.group}")
 
 
 if __name__ == "__main__":

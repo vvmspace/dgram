@@ -1,10 +1,10 @@
 #!/usr/bin/env -S uv run python
 """
-commands/search_groups path/to/tdata "query"
+commands/search_groups [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] "query"
 
-Connects via libs/dgram and searches for groups by way of Telegram's own
-global search (contacts.search), filtering the results down to groups and
-supergroups only (broadcast channels are excluded).
+Searches for groups by way of Telegram's own global search
+(contacts.search), filtering the results down to groups and supergroups
+only (broadcast channels are excluded).
 """
 
 import sys
@@ -15,35 +15,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from telethon.tl.functions.contacts import SearchRequest
-from telethon.tl.types import Channel, Chat
-
-from libs.dgram import get_client
-
-
-def _is_group(chat) -> bool:
-    if isinstance(chat, Channel):
-        return chat.megagroup
-    return isinstance(chat, Chat)
+from libs.cli import add_client_arguments, client_kwargs
+from methods.search_groups import search_groups
 
 
 async def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    add_client_arguments(parser)
     parser.add_argument("query", help="Search query")
     args = parser.parse_args()
 
-    client = await get_client(args.tdata_path)
-    try:
-        result = await client(SearchRequest(q=args.query, limit=50))
-        for chat in result.chats:
-            if not _is_group(chat):
-                continue
-            username = getattr(chat, "username", None)
-            handle = f"@{username}" if username else str(chat.id)
-            print(f"{chat.id}\t{handle}\t{chat.title}")
-    finally:
-        await client.disconnect()
+    for line in await search_groups(args.query, **client_kwargs(args)):
+        print(line)
 
 
 if __name__ == "__main__":

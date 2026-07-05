@@ -1,9 +1,9 @@
 #!/usr/bin/env -S uv run python
 """
-commands/folder_remove path/to/tdata <id|"Title"> @chat
+commands/folder_remove [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] <id|"Title"> @chat
 
-Connects via libs/dgram and removes the given chat from the folder's list
-(whether it was present amongst the included or the excluded peers).
+Removes the given chat from the folder's list (whether it was present
+amongst the included or the excluded peers).
 """
 
 import sys
@@ -14,43 +14,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from telethon import utils
-from telethon.tl.functions.messages import GetDialogFiltersRequest, UpdateDialogFilterRequest
-
-from libs.dgram import find_dialog_filter, get_client, resolve_target
+from libs.cli import add_client_arguments, client_kwargs
+from methods.folder_remove import remove_from_folder
 
 
 async def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    add_client_arguments(parser)
     parser.add_argument("folder", help="Folder id or exact title")
     parser.add_argument("chat", help="@user/@group/@me/conversation_id to remove")
     args = parser.parse_args()
 
-    client = await get_client(args.tdata_path)
     try:
-        result = await client(GetDialogFiltersRequest())
-        folder = find_dialog_filter(result.filters, args.folder)
-        if folder is None:
-            print(f"No such folder: {args.folder!r}", file=sys.stderr)
-            return 1
+        removed = await remove_from_folder(args.folder, args.chat, **client_kwargs(args))
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
 
-        target_peer = await client.get_input_entity(resolve_target(args.chat))
-        target_id = utils.get_peer_id(target_peer)
+    if not removed:
+        print(f"{args.chat} was not in folder {args.folder!r}", file=sys.stderr)
+        return 1
 
-        before = len(folder.include_peers) + len(folder.exclude_peers)
-        folder.include_peers = [p for p in folder.include_peers if utils.get_peer_id(p) != target_id]
-        folder.exclude_peers = [p for p in folder.exclude_peers if utils.get_peer_id(p) != target_id]
-
-        if len(folder.include_peers) + len(folder.exclude_peers) == before:
-            print(f"{args.chat} was not in folder {args.folder!r}", file=sys.stderr)
-            return 1
-
-        await client(UpdateDialogFilterRequest(id=folder.id, filter=folder))
-        print(f"Removed {args.chat} from folder {args.folder!r}")
-    finally:
-        await client.disconnect()
-
+    print(f"Removed {args.chat} from folder {args.folder!r}")
     return 0
 
 

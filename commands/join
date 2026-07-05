@@ -1,10 +1,9 @@
 #!/usr/bin/env -S uv run python
 """
-commands/join path/to/tdata @group
+commands/join [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] @group
 
-Connects via libs/dgram and joins the given group/channel. Accepts a
-@username, a public t.me/... link, or an invite link (t.me/+hash or
-t.me/joinchat/hash).
+Joins the given group/channel. Accepts a @username, a public t.me/... link,
+or an invite link (t.me/+hash or t.me/joinchat/hash).
 """
 
 import sys
@@ -14,33 +13,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import argparse
 import asyncio
-import re
 
-from telethon.tl.functions.channels import JoinChannelRequest
-from telethon.tl.functions.messages import ImportChatInviteRequest
-
-from libs.dgram import get_client, resolve_target
-
-INVITE_HASH_RE = re.compile(r"(?:joinchat/|\+)([\w-]+)$")
+from libs.cli import add_client_arguments, client_kwargs
+from methods.join import join
 
 
 async def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    add_client_arguments(parser)
     parser.add_argument("group", help="@group, a t.me/... link, or an invite link")
     args = parser.parse_args()
 
-    client = await get_client(args.tdata_path)
-    try:
-        invite_match = INVITE_HASH_RE.search(args.group)
-        if invite_match:
-            await client(ImportChatInviteRequest(invite_match.group(1)))
-        else:
-            entity = await client.get_entity(resolve_target(args.group))
-            await client(JoinChannelRequest(entity))
-        print(f"Successfully joined {args.group}")
-    finally:
-        await client.disconnect()
+    await join(args.group, **client_kwargs(args))
+    print(f"Successfully joined {args.group}")
 
 
 if __name__ == "__main__":

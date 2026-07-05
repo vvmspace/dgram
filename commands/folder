@@ -1,10 +1,9 @@
 #!/usr/bin/env -S uv run python
 """
-commands/folder path/to/tdata <id|"Title">
+commands/folder [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] <id|"Title">
 
-Connects via libs/dgram and lists the chats within the given folder,
-resolving each included peer to its username or id (excluded peers are
-shown with a leading minus sign).
+Lists the chats within the given folder, resolving each included peer to
+its username or id (excluded peers are shown with a leading minus sign).
 """
 
 import sys
@@ -15,38 +14,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from telethon.tl.functions.messages import GetDialogFiltersRequest
-
-from libs.dgram import find_dialog_filter, get_client
-
-
-async def _describe(client, peer) -> str:
-    entity = await client.get_entity(peer)
-    username = getattr(entity, "username", None)
-    return f"@{username}" if username else str(entity.id)
+from libs.cli import add_client_arguments, client_kwargs
+from methods.folder import list_folder_chats
 
 
 async def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    add_client_arguments(parser)
     parser.add_argument("folder", help="Folder id or exact title")
     args = parser.parse_args()
 
-    client = await get_client(args.tdata_path)
     try:
-        result = await client(GetDialogFiltersRequest())
-        folder = find_dialog_filter(result.filters, args.folder)
-        if folder is None:
-            print(f"No such folder: {args.folder!r}", file=sys.stderr)
-            return 1
+        lines = await list_folder_chats(args.folder, **client_kwargs(args))
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
 
-        for peer in folder.include_peers:
-            print(await _describe(client, peer))
-        for peer in folder.exclude_peers:
-            print(f"-{await _describe(client, peer)}")
-    finally:
-        await client.disconnect()
-
+    for line in lines:
+        print(line)
     return 0
 
 
