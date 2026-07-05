@@ -51,6 +51,10 @@ Every command follows the very same shape: `commands/<name> path/to/tdata [argum
 | 🤝 | `group_invite path/to/tdata @user @group` | Invites a user into a group |
 | 🗑️ | `group_delete path/to/tdata @group` | Deletes a group |
 | 🔍 | `search_groups path/to/tdata "query"` | Searches Telegram's own directory for public groups |
+| 🗂️ | `folders path/to/tdata` | Lists chat folders, with their include/exclude counts |
+| 📁 | `folder path/to/tdata <id\|"Title">` | Lists the chats within a given folder |
+| ➕ | `folder_add path/to/tdata <id\|"Title"> @chat` | Adds a chat to a folder's list |
+| ➖ | `folder_remove path/to/tdata <id\|"Title"> @chat` | Removes a chat from a folder's list |
 | 🆘 | `help` | Lists every command, with its usage synopsis |
 
 Run any command with `-h`/`--help` for its full argument list.

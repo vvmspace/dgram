@@ -14,6 +14,10 @@ Should the file [AGENTS.local.md] exist, treat it as the authoritative, up-to-da
 -- `group_invite path/to/tdata @username/id @groupname/id` - `libs/dgram` -> invites a user into the group
 -- `group_delete path/to/tdata @gr0upUs3rnam3` - `libs/dgram` -> deletes the group
 -- `search_groups path/to/tdata "query"` - `libs/dgram` -> searches for groups by way of Telegram's own search
+-- `folders path/to/tdata` - `libs/dgram` -> lists chat folders: id, title, include/exclude counts
+-- `folder path/to/tdata <id|"Title">` - `libs/dgram` -> lists the chats within the given folder
+-- `folder_add path/to/tdata <id|"Title"> @chat` - `libs/dgram` -> adds a chat to the folder's list
+-- `folder_remove path/to/tdata <id|"Title"> @chat` - `libs/dgram` -> removes a chat from the folder's list
 
 -- `up` - brings up (recreates) the torproxy Docker container, publishing the SOCKS5 and control ports, with the control-port password (`libs/tor.CONTROL_PASSWORD`, shared with `switch`)
 -- `down` - stops and removes the torproxy Docker container; the volumes holding Tor's data are preserved

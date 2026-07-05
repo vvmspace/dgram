@@ -1,0 +1,54 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/folder_add path/to/tdata <id|"Title"> @chat
+
+Connects via libs/dgram and adds the given chat to the folder's list,
+dropping it from the exclusion list first, should it have lingered there.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from telethon import utils
+from telethon.tl.functions.messages import GetDialogFiltersRequest, UpdateDialogFilterRequest
+
+from libs.dgram import find_dialog_filter, get_client, resolve_target
+
+
+async def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    parser.add_argument("folder", help="Folder id or exact title")
+    parser.add_argument("chat", help="@user/@group/@me/conversation_id to add")
+    args = parser.parse_args()
+
+    client = await get_client(args.tdata_path)
+    try:
+        result = await client(GetDialogFiltersRequest())
+        folder = find_dialog_filter(result.filters, args.folder)
+        if folder is None:
+            print(f"No such folder: {args.folder!r}", file=sys.stderr)
+            return 1
+
+        target_peer = await client.get_input_entity(resolve_target(args.chat))
+        target_id = utils.get_peer_id(target_peer)
+
+        folder.exclude_peers = [p for p in folder.exclude_peers if utils.get_peer_id(p) != target_id]
+        if not any(utils.get_peer_id(p) == target_id for p in folder.include_peers):
+            folder.include_peers.append(target_peer)
+
+        await client(UpdateDialogFilterRequest(id=folder.id, filter=folder))
+        print(f"Added {args.chat} to folder {args.folder!r}")
+    finally:
+        await client.disconnect()
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))

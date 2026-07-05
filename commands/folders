@@ -1,0 +1,41 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/folders path/to/tdata
+
+Connects via libs/dgram and lists every chat folder, showing its id, title,
+and how many chats it explicitly includes and excludes.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from telethon.tl.functions.messages import GetDialogFiltersRequest
+from telethon.tl.types import DialogFilterDefault
+
+from libs.dgram import get_client
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    args = parser.parse_args()
+
+    client = await get_client(args.tdata_path)
+    try:
+        result = await client(GetDialogFiltersRequest())
+        for folder in result.filters:
+            if isinstance(folder, DialogFilterDefault):
+                print("default\tAll Chats")
+                continue
+            print(f"{folder.id}\t{folder.title.text}\t+{len(folder.include_peers)}\t-{len(folder.exclude_peers)}")
+    finally:
+        await client.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

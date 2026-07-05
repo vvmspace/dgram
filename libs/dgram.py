@@ -10,6 +10,7 @@ from pathlib import Path
 from opentele.api import UseCurrentSession
 from opentele.td import TDesktop
 from opentele.tl import TelegramClient
+from telethon.tl.types import DialogFilterDefault
 
 PROXY = ("socks5", "localhost", 9050)
 
@@ -45,3 +46,15 @@ def resolve_target(value: str | None):
     if value.lstrip("-").isdigit():
         return int(value)
     return value
+
+
+def find_dialog_filter(filters, value: str):
+    """Find a chat folder (DialogFilter) by id or by exact title."""
+    for folder in filters:
+        if isinstance(folder, DialogFilterDefault):
+            continue
+        if value.isdigit() and folder.id == int(value):
+            return folder
+        if folder.title.text == value:
+            return folder
+    return None
