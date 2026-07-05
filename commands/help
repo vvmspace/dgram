@@ -1,0 +1,32 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/help
+
+Lists every command in this directory, together with its one-line usage
+synopsis, read directly from each script's own docstring.
+"""
+
+from pathlib import Path
+
+COMMANDS_DIR = Path(__file__).resolve().parent
+SELF_NAME = Path(__file__).stem
+
+
+def _usage(path: Path) -> str:
+    text = path.read_text()
+    _, _, body = text.partition("\n")  # drop the shebang line
+    _, _, after_open = body.partition('"""')
+    docstring, _, _ = after_open.partition('"""')
+    lines = [line.strip() for line in docstring.splitlines() if line.strip()]
+    return lines[0] if lines else path.name
+
+
+def main() -> None:
+    for path in sorted(COMMANDS_DIR.iterdir()):
+        if not path.is_file() or path.name in {SELF_NAME, "__pycache__"} or path.name.startswith("."):
+            continue
+        print(_usage(path))
+
+
+if __name__ == "__main__":
+    main()

@@ -51,6 +51,7 @@ Every command follows the very same shape: `commands/<name> path/to/tdata [argum
 | 🤝 | `group_invite path/to/tdata @user @group` | Invites a user into a group |
 | 🗑️ | `group_delete path/to/tdata @group` | Deletes a group |
 | 🔍 | `search_groups path/to/tdata "query"` | Searches Telegram's own directory for public groups |
+| 🆘 | `help` | Lists every command, with its usage synopsis |
 
 Run any command with `-h`/`--help` for its full argument list.
 
