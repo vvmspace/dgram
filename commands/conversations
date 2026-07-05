@@ -1,0 +1,43 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/conversations path/to/tdata
+
+Connects via libs/dgram and lists the dialogues/groups/channels.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from libs.dgram import get_client
+
+
+def _kind(dialog) -> str:
+    if dialog.is_user:
+        return "user"
+    if dialog.is_channel:
+        return "channel"
+    if dialog.is_group:
+        return "group"
+    return "unknown"
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    args = parser.parse_args()
+
+    client = await get_client(args.tdata_path)
+    try:
+        async for dialog in client.iter_dialogs():
+            print(f"{dialog.id}\t{_kind(dialog)}\t{dialog.name}")
+    finally:
+        await client.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

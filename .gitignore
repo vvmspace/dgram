@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# AI Drafts
+*.draft.md
+*.local.md
+*.private.md
+
+# Virtual environments
+.venv
+tdata
+*.session

@@ -1,0 +1,56 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/send_message path/to/tdata @user/@group/@me/conversation_id "message"
+
+Connects via libs/dgram and sends a message to the specified recipient. If
+the recipient is a channel/group the account has not yet joined, it joins
+first and waits random(5, 15) seconds before sending.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+import random
+
+from telethon.errors import UserNotParticipantError
+from telethon.tl.functions.channels import GetParticipantRequest, JoinChannelRequest
+from telethon.tl.types import Channel
+
+from libs.dgram import get_client, resolve_target
+
+
+async def _is_member(client, channel: Channel) -> bool:
+    try:
+        await client(GetParticipantRequest(channel, "me"))
+        return True
+    except UserNotParticipantError:
+        return False
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    parser.add_argument("target", help="@user/@group/@me/conversation_id")
+    parser.add_argument("message", help="Message text")
+    args = parser.parse_args()
+
+    client = await get_client(args.tdata_path)
+    try:
+        entity = await client.get_entity(resolve_target(args.target))
+
+        if isinstance(entity, Channel) and not await _is_member(client, entity):
+            await client(JoinChannelRequest(entity))
+            await asyncio.sleep(random.uniform(5, 15))
+
+        sent = await client.send_message(entity, args.message)
+        print(f"[{sent.date}] sent to {args.target}: {sent.text}")
+    finally:
+        await client.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

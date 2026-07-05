@@ -1,0 +1,33 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/down
+
+Stops and removes the torproxy Docker container, preserving the volumes
+holding Tor's data (/etc/tor, /var/lib/tor) - commands/up reuses them the
+next time it is brought up.
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from libs.tor import CONTAINER_NAME
+
+
+def main() -> int:
+    result = subprocess.run(["docker", "rm", "-f", CONTAINER_NAME], capture_output=True, text=True)
+    if result.returncode != 0:
+        if "No such container" in result.stderr:
+            print(f"{CONTAINER_NAME}: already stopped")
+            return 0
+        print(result.stderr.strip(), file=sys.stderr)
+        return 1
+
+    print(f"{CONTAINER_NAME}: stopped and removed (volumes preserved)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

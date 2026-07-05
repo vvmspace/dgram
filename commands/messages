@@ -1,0 +1,99 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/messages path/to/tdata [-l 20/--length=20] [-c ALL/--conversation_id=ALL] [-s ASC | --sort ASC]
+
+Connects via libs/dgram and prints the most recent length messages
+(including outgoing ones) in dialogue conversation_id, or (when ALL/left
+unspecified) the length most recent messages across every dialogue. By
+default the oldest are shown first (ASC); -s/--sort DESC shows the newest
+first.
+
+Sender label format:
+    Me (id) to @user/@group(chat_id):            - an outgoing message
+    @user(user_id):                              - incoming, within a private dialogue
+    @user in @group(group_id/user_id):           - incoming, within a group/channel
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+import sys
+
+from telethon.tl.types import User
+
+from libs.dgram import get_client, resolve_target
+
+
+async def _label(message, me_id: int, chat_username: str | None, chat_id: int | None, in_group: bool) -> str:
+    chat_part = f"@{chat_username}" if chat_username else str(chat_id)
+
+    if message.out or message.sender_id == me_id:
+        return f"Me ({message.sender_id}) to {chat_part}({chat_id})"
+
+    sender = await message.get_sender()
+    username = getattr(sender, "username", None)
+    user_part = f"@{username}" if username else str(message.sender_id)
+
+    if not in_group:
+        return f"{user_part}({message.sender_id})"
+
+    return f"{user_part} in {chat_part}({chat_id}/{message.sender_id})"
+
+
+async def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    parser.add_argument("-l", "--length", type=int, default=20, help="How many messages to print")
+    parser.add_argument("-c", "--conversation_id", default="ALL", help="@user/@group/id of a specific dialogue, or ALL")
+    parser.add_argument(
+        "-s", "--sort", choices=["ASC", "DESC"], default="ASC",
+        help="Ordering by date: ASC - oldest first (default), DESC - newest first",
+    )
+    args = parser.parse_args()
+
+    client = await get_client(args.tdata_path)
+    try:
+        me = await client.get_me()
+        rows: list[tuple] = []
+
+        if args.conversation_id == "ALL":
+            async for dialog in client.iter_dialogs():
+                in_group = not dialog.is_user
+                chat_username = getattr(dialog.entity, "username", None)
+                async for message in client.iter_messages(dialog, limit=args.length):
+                    label = await _label(message, me.id, chat_username, dialog.id, in_group)
+                    rows.append((message.date, f"[{message.date}] {label}: {message.text}"))
+
+            rows.sort(key=lambda row: row[0], reverse=True)
+            rows = rows[: args.length]
+        else:
+            try:
+                entity = await client.get_entity(resolve_target(args.conversation_id))
+            except ValueError:
+                print(
+                    f"Could not find dialogue {args.conversation_id!r}: "
+                    "the id is unknown to this session (never encountered in any dialogue).",
+                    file=sys.stderr,
+                )
+                return 1
+            in_group = not isinstance(entity, User)
+            chat_username = getattr(entity, "username", None)
+            async for message in client.iter_messages(entity, limit=args.length):
+                label = await _label(message, me.id, chat_username, entity.id, in_group)
+                rows.append((message.date, f"[{message.date}] {label}: {message.text}"))
+
+        rows.sort(key=lambda row: row[0], reverse=(args.sort == "DESC"))
+        for _, line in rows:
+            print(line)
+    finally:
+        await client.disconnect()
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))

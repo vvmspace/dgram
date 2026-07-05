@@ -1,0 +1,10 @@
+[project]
+name = "userbot"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "opentele>=1.15.1",
+    "python-socks[asyncio]>=2.8.2",
+    "telethon>=1.44.0",
+]

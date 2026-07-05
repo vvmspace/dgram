@@ -1,0 +1,110 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/switch [-h localhost / --host=localhost] [-p 9050 / --port=9050] [-c 9051 / --control-port=9051]
+
+Checks the current external IP address via socks5://host:port, sends the
+Tor control port (host:control-port) a NEWNYM signal to change identity,
+then checks the new external IP address via that very same SOCKS5 proxy.
+"""
+
+import socket
+import sys
+from argparse import ArgumentParser
+from pathlib import Path
+
+from python_socks import ProxyType
+from python_socks.sync import Proxy
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from libs.tor import CONTROL_PASSWORD, CONTROL_PORT, HOST, PROXY_PORT
+
+IP_CHECK_HOST = "icanhazip.com"
+IP_CHECK_PORT = 80
+
+
+def _check_ip(host: str, port: int) -> str:
+    proxy = Proxy.create(proxy_type=ProxyType.SOCKS5, host=host, port=port)
+    sock = proxy.connect(dest_host=IP_CHECK_HOST, dest_port=IP_CHECK_PORT, timeout=15)
+    try:
+        request = f"GET / HTTP/1.1\r\nHost: {IP_CHECK_HOST}\r\nConnection: close\r\n\r\n".encode()
+        sock.sendall(request)
+        response = b""
+        while chunk := sock.recv(4096):
+            response += chunk
+    finally:
+        sock.close()
+    _, _, body = response.partition(b"\r\n\r\n")
+    return body.decode().strip()
+
+
+def _control_command(sock: socket.socket, command: str) -> str:
+    sock.sendall(f"{command}\r\n".encode())
+    return sock.recv(4096).decode()
+
+
+def _authenticate(sock: socket.socket) -> None:
+    auth_response = _control_command(sock, f'AUTHENTICATE "{CONTROL_PASSWORD}"')
+    if auth_response.startswith("250"):
+        return
+
+    info = _control_command(sock, "PROTOCOLINFO 1")
+    cookie_path = None
+    for line in info.splitlines():
+        if "COOKIEFILE=" in line:
+            cookie_path = line.split("COOKIEFILE=", 1)[1].strip().strip('"')
+
+    if cookie_path:
+        try:
+            with open(cookie_path, "rb") as fh:
+                cookie_hex = fh.read().hex()
+        except OSError as exc:
+            raise RuntimeError(
+                f"the password was refused, and cookie file {cookie_path!r} is unreachable from the host: {exc}"
+            ) from exc
+        auth_response = _control_command(sock, f"AUTHENTICATE {cookie_hex}")
+    else:
+        auth_response = _control_command(sock, 'AUTHENTICATE ""')
+
+    if not auth_response.startswith("250"):
+        raise RuntimeError(f"failed to authenticate on the control port: {auth_response.strip()}")
+
+
+def _new_identity(host: str, control_port: int) -> None:
+    with socket.create_connection((host, control_port), timeout=10) as sock:
+        _authenticate(sock)
+
+        signal_response = _control_command(sock, "SIGNAL NEWNYM")
+        if not signal_response.startswith("250"):
+            raise RuntimeError(f"failed to change identity: {signal_response.strip()}")
+
+
+def main() -> int:
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument("--help", action="help", help="Show this help message")
+    parser.add_argument("-h", "--host", default=HOST, help="Host of the SOCKS5 proxy and the Tor control port")
+    parser.add_argument("-p", "--port", type=int, default=PROXY_PORT, help="SOCKS5 proxy port")
+    parser.add_argument("-c", "--control-port", type=int, default=CONTROL_PORT, help="Tor control port")
+    args = parser.parse_args()
+
+    try:
+        old_ip = _check_ip(args.host, args.port)
+        print(f"Current IP: {old_ip}")
+
+        _new_identity(args.host, args.control_port)
+
+        new_ip = _check_ip(args.host, args.port)
+        print(f"New IP: {new_ip}")
+    except (OSError, RuntimeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    if new_ip == old_ip:
+        print("Warning: the IP address did not change", file=sys.stderr)
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

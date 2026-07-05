@@ -1,0 +1,41 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/group_create path/to/tdata "Group name" @gr0upUs3rnam3
+
+Connects via libs/dgram and creates a public supergroup with the given
+title, then assigns it the public username.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from telethon.tl.functions.channels import CreateChannelRequest, UpdateUsernameRequest
+
+from libs.dgram import get_client
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    parser.add_argument("title", help="Group title")
+    parser.add_argument("username", help="Public @username for the group")
+    args = parser.parse_args()
+
+    client = await get_client(args.tdata_path)
+    try:
+        result = await client(CreateChannelRequest(title=args.title, about="", megagroup=True))
+        channel = result.chats[0]
+        username = args.username.lstrip("@")
+        await client(UpdateUsernameRequest(channel, username))
+        print(f"Created group {args.title!r} (id={channel.id}), @{username}")
+    finally:
+        await client.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

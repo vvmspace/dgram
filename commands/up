@@ -1,0 +1,66 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/up
+
+Brings up (recreates) the torproxy Docker container (dperson/torproxy):
+publishes the SOCKS5 port and the control port to the host, and enables
+password authentication on the control port (see libs/tor.CONTROL_PASSWORD)
+- without it, the control port only listens on 127.0.0.1 inside the
+container and demands a cookie file that is unreachable from the host. The
+very same password is used by commands/switch.
+
+Any existing volumes holding Tor's data (/etc/tor, /var/lib/tor) are reused
+where a container of this name already existed, so identity and
+configuration are not lost.
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from libs.tor import CONTAINER_NAME, CONTROL_PASSWORD, CONTROL_PORT, IMAGE, PROXY_PORT
+
+
+def _existing_volumes() -> dict[str, str]:
+    result = subprocess.run(
+        ["docker", "inspect", CONTAINER_NAME],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return {}
+    (info,) = json.loads(result.stdout)
+    return {
+        mount["Destination"]: mount["Name"]
+        for mount in info.get("Mounts", [])
+        if mount.get("Type") == "volume"
+    }
+
+
+def main() -> int:
+    volumes = _existing_volumes()
+
+    subprocess.run(["docker", "rm", "-f", CONTAINER_NAME], capture_output=True)
+
+    cmd = [
+        "docker", "run", "-d",
+        "--name", CONTAINER_NAME,
+        "--restart", "unless-stopped",
+        "-p", f"{PROXY_PORT}:9050",
+        "-p", f"127.0.0.1:{CONTROL_PORT}:9051",
+        "-e", f"PASSWORD={CONTROL_PASSWORD}",
+    ]
+    for dest, name in volumes.items():
+        cmd += ["-v", f"{name}:{dest}"]
+    cmd.append(IMAGE)
+
+    subprocess.run(cmd, check=True)
+    print(f"{CONTAINER_NAME}: SOCKS5 on {PROXY_PORT}, control port on 127.0.0.1:{CONTROL_PORT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

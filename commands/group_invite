@@ -1,0 +1,39 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/group_invite path/to/tdata @username/id @groupname/id
+
+Connects via libs/dgram and invites a user into the given group/channel.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from telethon.tl.functions.channels import InviteToChannelRequest
+
+from libs.dgram import get_client, resolve_target
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tdata_path", help="Path to the tdata folder")
+    parser.add_argument("user", help="@username or the id of the user")
+    parser.add_argument("group", help="@groupname or the id of the group")
+    args = parser.parse_args()
+
+    client = await get_client(args.tdata_path)
+    try:
+        user_entity = await client.get_entity(resolve_target(args.user))
+        group_entity = await client.get_entity(resolve_target(args.group))
+        await client(InviteToChannelRequest(group_entity, [user_entity]))
+        print(f"Added {args.user} to {args.group}")
+    finally:
+        await client.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
