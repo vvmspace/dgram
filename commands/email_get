@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.email_get import get_email
 
 
@@ -23,8 +23,8 @@ async def main() -> None:
     add_client_arguments(parser)
     args = parser.parse_args()
 
-    pattern = await get_email(**client_kwargs(args))
-    print(pattern if pattern else "No login email is set")
+    result = await get_email(**client_kwargs(args))
+    emit(result, args.json_path, lambda data: print(data["login_email_pattern"] or "No login email is set"))
 
 
 if __name__ == "__main__":

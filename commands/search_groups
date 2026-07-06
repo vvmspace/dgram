@@ -15,8 +15,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.search_groups import search_groups
+
+
+def _print(rows: list[dict]) -> None:
+    for item in rows:
+        print(f"{item['id']}\t{item['handle']}\t{item['title']}")
 
 
 async def main() -> None:
@@ -25,8 +30,8 @@ async def main() -> None:
     parser.add_argument("query", help="Search query")
     args = parser.parse_args()
 
-    for line in await search_groups(args.query, **client_kwargs(args)):
-        print(line)
+    rows = await search_groups(args.query, **client_kwargs(args))
+    emit(rows, args.json_path, _print)
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ commands/send_message @friend "Good evening!"
 commands/down                      # stops the proxy once you are done
 ```
 
-Every account-facing command follows the very same shape: `commands/<name> [-p path/to/tdata] [-s path/to/.session] [arguments…]`. Left unspecified, `-p`/`-s` default to `tdata`/`.session` in the working directory — and if neither exists, the command simply asks you to log in. No installation step, no virtual environment to activate by hand — `uv` handles all of that via the shebang line at the top of each script.
+Every account-facing command follows the very same shape: `commands/<name> [-p path/to/tdata] [-s path/to/.session] [--json path/to/out.json] [arguments…]`. Left unspecified, `-p`/`-s` default to `tdata`/`.session` in the working directory — and if neither exists, the command simply asks you to log in. Add `--json` and the result is written to that file as JSON instead of being prettily printed - handy for piping DGram into other tools. No installation step, no virtual environment to activate by hand — `uv` handles all of that via the shebang line at the top of each script.
 
 ## 📖 Command reference
 
@@ -44,7 +44,8 @@ Every account-facing command follows the very same shape: `commands/<name> [-p p
 | 🔄 | `switch [-h host] [-p port] [-c control-port]` | Requests a fresh Tor identity and waits, however long it takes, until the exit IP address actually changes (resending the request every minute) |
 | 📇 | `conversations [-p tdata] [-s .session]` | Lists dialogues, groups and channels |
 | 💬 | `messages [-p tdata] [--session] [-l length] [-c conversation_id] [-s ASC\|DESC]` | Prints recent messages, including your own, from one dialogue or across the lot |
-| ✉️ | `send_message [-p tdata] [-s .session] target "text"` | Sends a message; joins the target group first if you are not yet a member |
+| 📬 | `unread [-p tdata] [-s .session] [-c conversation_id] [-l limit] [--chat-limit] [--total-limit] [--dm-only]` | Lists unread incoming messages without marking them as read, fetching several dialogues at once; `--dm-only` skips groups and channels |
+| ✉️ | `send_message [-p tdata] [-s .session] [-f path ...] target "text"` | Sends a message, optionally with attached files/images; joins the target group first if you are not yet a member |
 | ⏳ | `wait [-p tdata] [-s .session] PATTERN [-t timeout] [-c conversation_id] [-m message]` | Waits for an incoming message matching a pattern, optionally sending one first |
 | ➕ | `join [-p tdata] [-s .session] @group` | Joins a group, channel or invite link |
 | ➖ | `leave [-p tdata] [-s .session] @group` | Leaves a group or channel |
@@ -62,16 +63,16 @@ Every account-facing command follows the very same shape: `commands/<name> [-p p
 | ➖ | `folder_remove [-p tdata] [-s .session] <id\|"Title"> @chat` | Removes a chat from a folder's list |
 | 🆘 | `help` | Lists every command, with its usage synopsis |
 
-`-p`/`--path-to-tdata` and `-s`/`--session` (`messages` uses `--session` only, since `-s` there means `--sort`) default to `tdata` and `.session` in the working directory. Run any command with `--help` for its full argument list.
+`-p`/`--path-to-tdata` and `-s`/`--session` (`messages` uses `--session` only, since `-s` there means `--sort`) default to `tdata` and `.session` in the working directory. Every command above also accepts `--json PATH`, writing its result there as JSON rather than printing it. Run any command with `--help` for its full argument list.
 
 ## 🏛️ Architecture, in brief
 
 ```
 libs/dgram.py   -> get_client(tdata_path, session_path)   resolves tdata -> .session -> interactive login, over Tor
-libs/cli.py     -> shared -p/--path-to-tdata and -s/--session argparse wiring
+libs/cli.py     -> shared -p/-s/--json argparse wiring, plus emit() to print or write JSON
 libs/tor.py     -> shared Tor proxy/container settings, used by up, down and switch
-methods/*       -> one module per capability, each initialising its own client and returning data rather than printing it
-commands/*      -> one shebanged script per capability: parse arguments, call into methods, print the result
+methods/*       -> one module per capability, each initialising its own client and returning plain data (dict/list/None) rather than printing it
+commands/*      -> one shebanged script per capability: parse arguments, call into methods, emit() the result
 ```
 
 Every command reads top to bottom without surprises, and stays a thin shell around its `methods` counterpart — which is where the logic actually lives, and where it can be reused or tested independently of any CLI concerns. Notably, no client is ever passed between the two: for security, each `methods` function initialises its own DGram session rather than accepting one ready-made, so a command can never hand it a client from an untrusted or unexpected source.
@@ -80,9 +81,9 @@ Every command reads top to bottom without surprises, and stays a thin shell arou
 
 Adding a new command takes four steps:
 
-1. 🧠 Write the logic as a function in `methods/my_command.py`, accepting `tdata_path`/`session_path`/`interactive` keyword arguments and initialising its own client via `libs.dgram.get_client` — never accept a client as a parameter. Return data rather than printing it.
+1. 🧠 Write the logic as a function in `methods/my_command.py`, accepting `tdata_path`/`session_path` keyword arguments and initialising its own client via `libs.dgram.get_client` — never accept a client as a parameter. Return plain data (a dict, a list of dicts, or nothing) rather than a raw Telethon object or printed text.
 2. 📄 Create `commands/my_command` with a `#!/usr/bin/env -S uv run python` shebang and the standard `sys.path` bootstrap (copy it from any existing command).
-3. 🔌 Call `libs.cli.add_client_arguments(parser)` for the standard `-p`/`-s` options, then call your `methods` function with `**libs.cli.client_kwargs(args)`.
+3. 🔌 Call `libs.cli.add_client_arguments(parser)` for the standard `-p`/`-s`/`--json` options, call your `methods` function with `**libs.cli.client_kwargs(args)`, then hand the result to `libs.cli.emit(result, args.json_path, formatter)` with a small `formatter` function for the human-readable form.
 4. ✅ `chmod +x commands/my_command` and you have a new, first-class utility — no registration, no plugin system, nothing further to wire up.
 
 ## 🔐 Security notes

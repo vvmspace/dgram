@@ -12,18 +12,21 @@ async def list_folders(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> list[str]:
+) -> list[dict]:
     client = await get_client(tdata_path, session_path)
     try:
         result = await client(GetDialogFiltersRequest())
         lines = []
         for folder in result.filters:
             if isinstance(folder, DialogFilterDefault):
-                lines.append("default\tAll Chats")
+                lines.append({"id": "default", "title": "All Chats"})
                 continue
-            lines.append(
-                f"{folder.id}\t{folder.title.text}\t+{len(folder.include_peers)}\t-{len(folder.exclude_peers)}"
-            )
+            lines.append({
+                "id": folder.id,
+                "title": folder.title.text,
+                "include_count": len(folder.include_peers),
+                "exclude_count": len(folder.exclude_peers),
+            })
         return lines
     finally:
         await client.disconnect()

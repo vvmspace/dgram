@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.wait import wait_for_message
 
 
@@ -30,14 +30,14 @@ async def main() -> int:
     args = parser.parse_args()
 
     try:
-        message = await wait_for_message(
+        result = await wait_for_message(
             args.pattern, args.timeout, args.conversation_id, args.message, **client_kwargs(args)
         )
     except asyncio.TimeoutError:
         print(f"No message matching pattern {args.pattern!r} was received within {args.timeout} s.", file=sys.stderr)
         return 1
 
-    print(f"[{message.date}] {message.text}")
+    emit(result, args.json_path, lambda data: print(f"[{data['date']}] {data['text']}"))
     return 0
 
 

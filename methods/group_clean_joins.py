@@ -24,7 +24,7 @@ async def clean_joins(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> int:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         entity = await client.get_entity(resolve_target(group))
@@ -39,6 +39,6 @@ async def clean_joins(
         if message_ids:
             await client.delete_messages(entity, message_ids)
 
-        return len(message_ids)
+        return {"group": group, "deleted": len(message_ids)}
     finally:
         await client.disconnect()

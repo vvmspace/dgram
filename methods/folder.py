@@ -19,7 +19,7 @@ async def list_folder_chats(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> list[str]:
+) -> list[dict]:
     client = await get_client(tdata_path, session_path)
     try:
         result = await client(GetDialogFiltersRequest())
@@ -27,8 +27,8 @@ async def list_folder_chats(
         if folder is None:
             raise ValueError(f"No such folder: {folder_ref!r}")
 
-        lines = [await _describe(client, peer) for peer in folder.include_peers]
-        lines += [f"-{await _describe(client, peer)}" for peer in folder.exclude_peers]
+        lines = [{"chat": await _describe(client, peer), "excluded": False} for peer in folder.include_peers]
+        lines += [{"chat": await _describe(client, peer), "excluded": True} for peer in folder.exclude_peers]
         return lines
     finally:
         await client.disconnect()

@@ -20,7 +20,7 @@ async def search_groups(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> list[str]:
+) -> list[dict]:
     client = await get_client(tdata_path, session_path)
     try:
         result = await client(SearchRequest(q=query, limit=50))
@@ -30,7 +30,7 @@ async def search_groups(
                 continue
             username = getattr(chat, "username", None)
             handle = f"@{username}" if username else str(chat.id)
-            lines.append(f"{chat.id}\t{handle}\t{chat.title}")
+            lines.append({"id": chat.id, "handle": handle, "title": chat.title})
         return lines
     finally:
         await client.disconnect()

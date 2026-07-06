@@ -14,8 +14,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.folders import list_folders
+
+
+def _print(rows: list[dict]) -> None:
+    for item in rows:
+        if item["id"] == "default":
+            print(f"default\t{item['title']}")
+        else:
+            print(f"{item['id']}\t{item['title']}\t+{item['include_count']}\t-{item['exclude_count']}")
 
 
 async def main() -> None:
@@ -23,8 +31,8 @@ async def main() -> None:
     add_client_arguments(parser)
     args = parser.parse_args()
 
-    for line in await list_folders(**client_kwargs(args)):
-        print(line)
+    rows = await list_folders(**client_kwargs(args))
+    emit(rows, args.json_path, _print)
 
 
 if __name__ == "__main__":

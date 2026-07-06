@@ -13,8 +13,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.conversations import list_conversations
+
+
+def _print(rows: list[dict]) -> None:
+    for item in rows:
+        print(f"{item['id']}\t{item['kind']}\t{item['name']}")
 
 
 async def main() -> None:
@@ -22,8 +27,8 @@ async def main() -> None:
     add_client_arguments(parser)
     args = parser.parse_args()
 
-    for line in await list_conversations(**client_kwargs(args)):
-        print(line)
+    rows = await list_conversations(**client_kwargs(args))
+    emit(rows, args.json_path, _print)
 
 
 if __name__ == "__main__":

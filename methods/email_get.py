@@ -13,10 +13,10 @@ async def get_email(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> str | None:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         password = await client(GetPasswordRequest())
-        return password.login_email_pattern
+        return {"login_email_pattern": password.login_email_pattern}
     finally:
         await client.disconnect()

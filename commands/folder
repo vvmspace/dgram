@@ -14,8 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.folder import list_folder_chats
+
+
+def _print(rows: list[dict]) -> None:
+    for item in rows:
+        print(f"-{item['chat']}" if item["excluded"] else item["chat"])
 
 
 async def main() -> int:
@@ -25,13 +30,12 @@ async def main() -> int:
     args = parser.parse_args()
 
     try:
-        lines = await list_folder_chats(args.folder, **client_kwargs(args))
+        rows = await list_folder_chats(args.folder, **client_kwargs(args))
     except ValueError as exc:
         print(exc, file=sys.stderr)
         return 1
 
-    for line in lines:
-        print(line)
+    emit(rows, args.json_path, _print)
     return 0
 
 

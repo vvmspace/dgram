@@ -14,11 +14,12 @@ async def invite(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> None:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         user_entity = await client.get_entity(resolve_target(user))
         group_entity = await client.get_entity(resolve_target(group))
         await client(InviteToChannelRequest(group_entity, [user_entity]))
+        return {"user": user, "group": group}
     finally:
         await client.disconnect()

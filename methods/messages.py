@@ -1,5 +1,5 @@
 """
-Retrieves and formats recent messages, from one dialogue or across the lot.
+Retrieves recent messages, from one dialogue or across the lot.
 Initialises its own DGram client on every call.
 
 Sender label format:
@@ -36,7 +36,7 @@ async def get_messages(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> list[str]:
+) -> list[dict]:
     client = await get_client(tdata_path, session_path)
     try:
         me = await client.get_me()
@@ -48,7 +48,7 @@ async def get_messages(
                 chat_username = getattr(dialog.entity, "username", None)
                 async for message in client.iter_messages(dialog, limit=length):
                     label = await _label(message, me.id, chat_username, dialog.id, in_group)
-                    rows.append((message.date, f"[{message.date}] {label}: {message.text}"))
+                    rows.append((message.date, {"date": message.date.isoformat(), "label": label, "text": message.text}))
 
             rows.sort(key=lambda row: row[0], reverse=True)
             rows = rows[:length]
@@ -64,9 +64,9 @@ async def get_messages(
             chat_username = getattr(entity, "username", None)
             async for message in client.iter_messages(entity, limit=length):
                 label = await _label(message, me.id, chat_username, entity.id, in_group)
-                rows.append((message.date, f"[{message.date}] {label}: {message.text}"))
+                rows.append((message.date, {"date": message.date.isoformat(), "label": label, "text": message.text}))
 
         rows.sort(key=lambda row: row[0], reverse=(sort == "DESC"))
-        return [line for _, line in rows]
+        return [item for _, item in rows]
     finally:
         await client.disconnect()

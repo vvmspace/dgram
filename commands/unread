@@ -1,0 +1,61 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/unread [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] [-c ALL/--conversation_id=ALL] [-l/--limit=] [--chat-limit=10] [--total-limit=1000] [--dm-only]
+
+Prints unread incoming messages, from one dialogue or across the lot,
+without marking them as read. In ALL mode, unread dialogues are fetched
+several at a time and progress is reported on stderr as each completes.
+-l/--limit caps how many unread dialogues are examined; --chat-limit caps
+how many unread messages are pulled from any one dialogue (a single very
+active group can otherwise have thousands sitting unread); --total-limit
+caps the overall count collected across every dialogue combined;
+--dm-only skips groups and channels, examining private dialogues only.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from libs.cli import add_client_arguments, client_kwargs, emit
+from methods.unread import list_unread
+
+
+def _print(rows: list[dict]) -> None:
+    for item in rows:
+        print(f"[{item['date']}] {item['label']}: {item['text']}")
+
+
+def _progress(done: int, total: int, name: str) -> None:
+    print(f"[{done}/{total}] checked {name}", file=sys.stderr)
+
+
+async def main() -> int:
+    parser = argparse.ArgumentParser()
+    add_client_arguments(parser)
+    parser.add_argument("-c", "--conversation_id", default="ALL", help="@user/@group/id of a specific dialogue, or ALL")
+    parser.add_argument("-l", "--limit", type=int, default=None, help="Maximum number of unread dialogues to examine, in ALL mode")
+    parser.add_argument("--chat-limit", type=int, default=10, help="Maximum number of unread messages to pull from any one dialogue")
+    parser.add_argument("--total-limit", type=int, default=1000, help="Maximum number of unread messages to collect overall")
+    parser.add_argument("--dm-only", action="store_true", help="Skip groups and channels, examining private dialogues only")
+    args = parser.parse_args()
+
+    try:
+        rows = await list_unread(
+            args.conversation_id, args.limit,
+            chat_limit=args.chat_limit, total_limit=args.total_limit, dm_only=args.dm_only,
+            on_progress=_progress, **client_kwargs(args),
+        )
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
+    emit(rows, args.json_path, _print)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))

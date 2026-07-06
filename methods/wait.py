@@ -19,7 +19,7 @@ async def wait_for_message(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-):
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         found: "asyncio.Future" = asyncio.get_event_loop().create_future()
@@ -40,6 +40,7 @@ async def wait_for_message(
         if entity is not None and message is not None:
             await client.send_message(entity, message)
 
-        return await asyncio.wait_for(found, timeout=timeout)
+        found_message = await asyncio.wait_for(found, timeout=timeout)
+        return {"date": found_message.date.isoformat(), "text": found_message.text}
     finally:
         await client.disconnect()

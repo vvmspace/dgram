@@ -13,8 +13,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.session import get_session_info
+
+
+def _print(data: dict) -> None:
+    print(f"id: {data['id']}")
+    print(f"username: @{data['username']}" if data["username"] else "username: (none)")
+    print(f"phone: +{data['phone']}" if data["phone"] else "phone: (hidden)")
+    print(f"name: {data['name']}" if data["name"] else "name: (none)")
+    print(f"premium: {data['premium']}")
+    print(f"dc: {data['dc']}")
 
 
 async def main() -> None:
@@ -22,8 +31,8 @@ async def main() -> None:
     add_client_arguments(parser)
     args = parser.parse_args()
 
-    for line in await get_session_info(**client_kwargs(args)):
-        print(line)
+    result = await get_session_info(**client_kwargs(args))
+    emit(result, args.json_path, _print)
 
 
 if __name__ == "__main__":

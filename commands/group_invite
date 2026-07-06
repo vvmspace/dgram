@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.group_invite import invite
 
 
@@ -24,8 +24,8 @@ async def main() -> None:
     parser.add_argument("group", help="@groupname or the id of the group")
     args = parser.parse_args()
 
-    await invite(args.user, args.group, **client_kwargs(args))
-    print(f"Added {args.user} to {args.group}")
+    result = await invite(args.user, args.group, **client_kwargs(args))
+    emit(result, args.json_path, lambda data: print(f"Added {data['user']} to {data['group']}"))
 
 
 if __name__ == "__main__":

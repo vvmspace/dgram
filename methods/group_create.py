@@ -14,13 +14,13 @@ async def create_group(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-):
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         result = await client(CreateChannelRequest(title=title, about="", megagroup=True))
         channel = result.chats[0]
         username = username.lstrip("@")
         await client(UpdateUsernameRequest(channel, username))
-        return channel, username
+        return {"id": channel.id, "title": title, "username": username}
     finally:
         await client.disconnect()

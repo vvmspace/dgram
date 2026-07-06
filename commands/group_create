@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.group_create import create_group
 
 
@@ -25,8 +25,8 @@ async def main() -> None:
     parser.add_argument("username", help="Public @username for the group")
     args = parser.parse_args()
 
-    channel, username = await create_group(args.title, args.username, **client_kwargs(args))
-    print(f"Created group {args.title!r} (id={channel.id}), @{username}")
+    result = await create_group(args.title, args.username, **client_kwargs(args))
+    emit(result, args.json_path, lambda data: print(f"Created group {data['title']!r} (id={data['id']}), @{data['username']}"))
 
 
 if __name__ == "__main__":

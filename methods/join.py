@@ -18,7 +18,7 @@ async def join(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> None:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         invite_match = INVITE_HASH_RE.search(group)
@@ -27,5 +27,6 @@ async def join(
         else:
             entity = await client.get_entity(resolve_target(group))
             await client(JoinChannelRequest(entity))
+        return {"group": group}
     finally:
         await client.disconnect()

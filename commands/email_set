@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.email_set import set_email
 
 
@@ -24,8 +24,8 @@ async def main() -> None:
     parser.add_argument("email", help="New login email address")
     args = parser.parse_args()
 
-    await set_email(args.email, **client_kwargs(args))
-    print(f"Login email set to {args.email}")
+    result = await set_email(args.email, **client_kwargs(args))
+    emit(result, args.json_path, lambda data: print(f"Login email set to {data['email']}"))
 
 
 if __name__ == "__main__":

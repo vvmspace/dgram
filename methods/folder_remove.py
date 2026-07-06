@@ -15,7 +15,7 @@ async def remove_from_folder(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> bool:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         result = await client(GetDialogFiltersRequest())
@@ -29,11 +29,11 @@ async def remove_from_folder(
         before = len(folder.include_peers) + len(folder.exclude_peers)
         folder.include_peers = [p for p in folder.include_peers if utils.get_peer_id(p) != target_id]
         folder.exclude_peers = [p for p in folder.exclude_peers if utils.get_peer_id(p) != target_id]
+        removed = len(folder.include_peers) + len(folder.exclude_peers) != before
 
-        if len(folder.include_peers) + len(folder.exclude_peers) == before:
-            return False
+        if removed:
+            await client(UpdateDialogFilterRequest(id=folder.id, filter=folder))
 
-        await client(UpdateDialogFilterRequest(id=folder.id, filter=folder))
-        return True
+        return {"folder": folder_ref, "chat": chat, "removed": removed}
     finally:
         await client.disconnect()

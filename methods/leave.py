@@ -12,10 +12,11 @@ async def leave(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> None:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         entity = await client.get_entity(resolve_target(group))
         await client(LeaveChannelRequest(entity))
+        return {"group": group}
     finally:
         await client.disconnect()

@@ -1,8 +1,9 @@
 #!/usr/bin/env -S uv run python
 """
-commands/send_message [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] @user/@group/@me/conversation_id "message"
+commands/send_message [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] [-f path/--file=path ...] @user/@group/@me/conversation_id "message"
 
-Sends a message to the specified recipient. If the recipient is a
+Sends a message to the specified recipient, optionally attaching one or
+more files/images (repeat -f/--file for an album). If the recipient is a
 channel/group the account has not yet joined, it joins first and waits
 random(5, 15) seconds before sending.
 """
@@ -15,8 +16,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.send_message import send_message
+
+
+def _print(data: dict) -> None:
+    suffix = f" (with {len(data['files'])} file(s))" if data["files"] else ""
+    print(f"[{data['date']}] sent to {data['target']}: {data['text']}{suffix}")
 
 
 async def main() -> None:
@@ -24,10 +30,14 @@ async def main() -> None:
     add_client_arguments(parser)
     parser.add_argument("target", help="@user/@group/@me/conversation_id")
     parser.add_argument("message", help="Message text")
+    parser.add_argument(
+        "-f", "--file", dest="files", action="append", default=None, metavar="PATH",
+        help="Path to a file/image to attach (repeatable, sent as an album)",
+    )
     args = parser.parse_args()
 
-    sent = await send_message(args.target, args.message, **client_kwargs(args))
-    print(f"[{sent.date}] sent to {args.target}: {sent.text}")
+    result = await send_message(args.target, args.message, args.files, **client_kwargs(args))
+    emit(result, args.json_path, _print)
 
 
 if __name__ == "__main__":

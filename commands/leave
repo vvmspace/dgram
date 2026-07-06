@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.leave import leave
 
 
@@ -23,8 +23,8 @@ async def main() -> None:
     parser.add_argument("group", help="@group or the id of the group/channel")
     args = parser.parse_args()
 
-    await leave(args.group, **client_kwargs(args))
-    print(f"Left {args.group}")
+    result = await leave(args.group, **client_kwargs(args))
+    emit(result, args.json_path, lambda data: print(f"Left {data['group']}"))
 
 
 if __name__ == "__main__":

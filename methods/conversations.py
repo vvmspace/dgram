@@ -20,12 +20,12 @@ async def list_conversations(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> list[str]:
+) -> list[dict]:
     client = await get_client(tdata_path, session_path)
     try:
         lines = []
         async for dialog in client.iter_dialogs():
-            lines.append(f"{dialog.id}\t{_kind(dialog)}\t{dialog.name}")
+            lines.append({"id": dialog.id, "kind": _kind(dialog), "name": dialog.name})
         return lines
     finally:
         await client.disconnect()

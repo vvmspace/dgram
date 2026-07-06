@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.folder_remove import remove_from_folder
 
 
@@ -26,16 +26,16 @@ async def main() -> int:
     args = parser.parse_args()
 
     try:
-        removed = await remove_from_folder(args.folder, args.chat, **client_kwargs(args))
+        result = await remove_from_folder(args.folder, args.chat, **client_kwargs(args))
     except ValueError as exc:
         print(exc, file=sys.stderr)
         return 1
 
-    if not removed:
+    if not result["removed"]:
         print(f"{args.chat} was not in folder {args.folder!r}", file=sys.stderr)
         return 1
 
-    print(f"Removed {args.chat} from folder {args.folder!r}")
+    emit(result, args.json_path, lambda data: print(f"Removed {data['chat']} from folder {data['folder']!r}"))
     return 0
 
 

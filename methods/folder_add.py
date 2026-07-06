@@ -15,7 +15,7 @@ async def add_to_folder(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> None:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         result = await client(GetDialogFiltersRequest())
@@ -31,5 +31,6 @@ async def add_to_folder(
             folder.include_peers.append(target_peer)
 
         await client(UpdateDialogFilterRequest(id=folder.id, filter=folder))
+        return {"folder": folder_ref, "chat": chat}
     finally:
         await client.disconnect()

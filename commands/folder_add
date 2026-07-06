@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.folder_add import add_to_folder
 
 
@@ -26,12 +26,12 @@ async def main() -> int:
     args = parser.parse_args()
 
     try:
-        await add_to_folder(args.folder, args.chat, **client_kwargs(args))
+        result = await add_to_folder(args.folder, args.chat, **client_kwargs(args))
     except ValueError as exc:
         print(exc, file=sys.stderr)
         return 1
 
-    print(f"Added {args.chat} to folder {args.folder!r}")
+    emit(result, args.json_path, lambda data: print(f"Added {data['chat']} to folder {data['folder']!r}"))
     return 0
 
 

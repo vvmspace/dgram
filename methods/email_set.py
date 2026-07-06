@@ -16,12 +16,13 @@ async def set_email(
     code_callback=input,
     tdata_path: str | None = None,
     session_path: str | None = None,
-) -> None:
+) -> dict:
     client = await get_client(tdata_path, session_path)
     try:
         purpose = EmailVerifyPurposeLoginChange()
         await client(SendVerifyEmailCodeRequest(purpose=purpose, email=email))
         code = code_callback(f"Enter the code Telegram sent to {email}: ")
         await client(VerifyEmailRequest(purpose=purpose, verification=EmailVerificationCode(code=code)))
+        return {"email": email}
     finally:
         await client.disconnect()

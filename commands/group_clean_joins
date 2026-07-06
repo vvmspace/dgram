@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import argparse
 import asyncio
 
-from libs.cli import add_client_arguments, client_kwargs
+from libs.cli import add_client_arguments, client_kwargs, emit
 from methods.group_clean_joins import clean_joins
 
 
@@ -25,8 +25,8 @@ async def main() -> None:
     parser.add_argument("group", help="@groupname or the id of the group")
     args = parser.parse_args()
 
-    deleted = await clean_joins(args.group, args.length, **client_kwargs(args))
-    print(f"Deleted {deleted} join message(s) from {args.group}")
+    result = await clean_joins(args.group, args.length, **client_kwargs(args))
+    emit(result, args.json_path, lambda data: print(f"Deleted {data['deleted']} join message(s) from {data['group']}"))
 
 
 if __name__ == "__main__":

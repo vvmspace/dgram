@@ -3,12 +3,13 @@
 Should the file [AGENTS.local.md] exist, treat it as the authoritative, up-to-date version.
 
 - `libs/dgram`: Accepts, as its parameter, the path to a `TDATA_PATH = "tdata"` folder, or a `SESSION_PATH = ".session"`, with optional defaults `PROXY = ("socks5", "localhost", 9050)`, and yields a TelegramClient instance. Every connection within this project is conducted through it.
-- `methods`
+- `methods` - methods return an object bearing data, or else void
 -- ...
-- `commands` - commands bearing shebangs, without file extensions, which wrap the methods found in `methods`
+- `commands` - commands bearing shebangs, without file extensions, which wrap the methods found in `methods` and prettily print the data from the response
 -- `wait [-p tdata / --path-to-tdata=tdata] PATTERN [-t 30/--timeout=30]  [-c/--conversation_id=] [-m / --message=]` - engages `libs/dgram` and awaits a message matching PATTERN for timeout seconds. Should both conversation_id and message be supplied, it first sends the message.
 -- `messages [-p tdata / --path-to-tdata=tdata] [-l 20/--length=20]` [-c ALL/--conversation_id=ALL] [-s ASC | --sort ASC] - `libs/dgram` -> prints the most recent length messages (including outgoing ones) within dialogue conversation_id, or across all dialogues where none is specified.
--- `send_message [-p tdata / --path-to-tdata=tdata] @user/@group/@me/conversation_id "message"` - `libs/dgram` -> send message; should the account not yet belong to the group, it joins and awaits random(5,15) seconds
+-- `unread [-p tdata / --path-to-tdata=tdata] [-c ALL/--conversation_id=ALL] [-l/--limit=] [--chat-limit=10] [--total-limit=1000] [--dm-only]` - `libs/dgram` -> lists unread incoming messages, from one dialogue or across the lot, without marking them as read; in ALL mode dialogues are fetched several at a time with progress reported on stderr, chat-limit bounds messages pulled per dialogue, total-limit bounds the overall count, and dm-only restricts the scan to private dialogues, skipping groups and channels
+-- `send_message [-p tdata / --path-to-tdata=tdata] [-f path / --file=path ...] @user/@group/@me/conversation_id "message"` - `libs/dgram` -> send message, optionally attaching one or more files/images (repeatable, sent as an album); should the account not yet belong to the group, it joins and awaits random(5,15) seconds
 -- `join [-p tdata / --path-to-tdata=tdata] @group` - `libs/dgram` -> joins the group
 -- `leave [-p tdata / --path-to-tdata=tdata] @group` - `libs/dgram` -> leaves the group
 -- `conversations [-p tdata / --path-to-tdata=tdata]` - `libs/dgram` -> lists dialogues/groups/channels
@@ -35,5 +36,6 @@ Should the file [AGENTS.local.md] exist, treat it as the authoritative, up-to-da
 ## Commands common parameters:
 
 - `[-p tdata / --path-to-tdata=tdata] [-s .session / --session=.session]` - an optional parameter giving the path to the tdata folder or to a session, each with the defaults shown. Order of checking: tdata -> .session. Where `--path-to-tdata` is given explicitly and does not exist, this is an error. Otherwise, where `--session` (whether given explicitly, e.g. without `--path-to-tdata`, or left at its default) does not exist, the user is invited to authenticate: `phone/email` -> `code` `[-> password, where 2FA is enabled]`, and the resulting session is saved there. An explicit `--session` takes precedence over a merely-default `tdata` folder: should the given session not yet exist, authentication is offered even where the default `tdata` folder is present. By default, `tdata` and `.session` are sought in the working directory.
+- `[--json=]` - where this parameter is supplied, the results are written to a JSON file instead
 
 Language within the code: posh UK English only
