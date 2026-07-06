@@ -41,7 +41,7 @@ Every account-facing command follows the very same shape: `commands/<name> [-p p
 |---|---|---|
 | 🌐 | `up` | Brings up (or recreates) the Tor proxy container, publishing the SOCKS5 and control ports |
 | 🛑 | `down` | Stops the Tor proxy container, keeping its data volumes intact |
-| 🔄 | `switch [-h host] [-p port] [-c control-port]` | Requests a fresh Tor identity and confirms the exit IP address changed |
+| 🔄 | `switch [-h host] [-p port] [-c control-port]` | Requests a fresh Tor identity and waits, however long it takes, until the exit IP address actually changes (resending the request every minute) |
 | 📇 | `conversations [-p tdata] [-s .session]` | Lists dialogues, groups and channels |
 | 💬 | `messages [-p tdata] [--session] [-l length] [-c conversation_id] [-s ASC\|DESC]` | Prints recent messages, including your own, from one dialogue or across the lot |
 | ✉️ | `send_message [-p tdata] [-s .session] target "text"` | Sends a message; joins the target group first if you are not yet a member |

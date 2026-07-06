@@ -25,7 +25,7 @@ Should the file [AGENTS.local.md] exist, treat it as the authoritative, up-to-da
 
 -- `up` - brings up (recreates) the torproxy Docker container, publishing the SOCKS5 and control ports, with the control-port password (`libs/tor.CONTROL_PASSWORD`, shared with `switch`)
 -- `down` - stops and removes the torproxy Docker container; the volumes holding Tor's data are preserved
--- `switch [-h localhost / --host=localthost] [-p 9050 / --port=9050] [-c 9051 / --control-port=9051]` - checks ip address using socks5://host:port proxy -> switches Tor identity -> checks new ip address using socks5://host:port
+-- `switch [-h localhost / --host=localthost] [-p 9050 / --port=9050] [-c 9051 / --control-port=9051]` - checks ip address using socks5://host:port proxy -> switches Tor identity -> polls the ip address using socks5://host:port until it actually changes. Strict requirement: the command must wait for the IP to change and must not exit without it; if the IP has not changed within a minute, it resends the identity-change signal.
 -- `help` - lists the commands
 
 - `README.md` - lavishly written, engaging and persuasive for the user, optimised for SEO and GEO discovery by prospective users. It ought to demonstrate the ease of use and the ease of extension.

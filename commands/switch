@@ -4,11 +4,14 @@ commands/switch [-h localhost / --host=localhost] [-p 9050 / --port=9050] [-c 90
 
 Checks the current external IP address via socks5://host:port, sends the
 Tor control port (host:control-port) a NEWNYM signal to change identity,
-then checks the new external IP address via that very same SOCKS5 proxy.
+then polls the external IP address via that very same SOCKS5 proxy until
+it actually changes. The command does not give up: should the IP still
+match after a minute, it sends NEWNYM afresh and carries on waiting.
 """
 
 import socket
 import sys
+import time
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -79,6 +82,25 @@ def _new_identity(host: str, control_port: int) -> None:
             raise RuntimeError(f"failed to change identity: {signal_response.strip()}")
 
 
+def _wait_for_new_ip(host: str, port: int, control_port: int, old_ip: str) -> str:
+    resend_interval = 60.0
+    poll_interval = 2.0
+
+    _new_identity(host, control_port)
+    last_signal = time.monotonic()
+
+    while True:
+        new_ip = _check_ip(host, port)
+        if new_ip != old_ip:
+            return new_ip
+
+        if time.monotonic() - last_signal >= resend_interval:
+            _new_identity(host, control_port)
+            last_signal = time.monotonic()
+
+        time.sleep(poll_interval)
+
+
 def main() -> int:
     parser = ArgumentParser(add_help=False)
     parser.add_argument("--help", action="help", help="Show this help message")
@@ -91,16 +113,10 @@ def main() -> int:
         old_ip = _check_ip(args.host, args.port)
         print(f"Current IP: {old_ip}")
 
-        _new_identity(args.host, args.control_port)
-
-        new_ip = _check_ip(args.host, args.port)
+        new_ip = _wait_for_new_ip(args.host, args.port, args.control_port, old_ip)
         print(f"New IP: {new_ip}")
     except (OSError, RuntimeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
-        return 1
-
-    if new_ip == old_ip:
-        print("Warning: the IP address did not change", file=sys.stderr)
         return 1
 
     return 0
