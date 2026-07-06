@@ -36,9 +36,8 @@ async def get_messages(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ) -> list[str]:
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         me = await client.get_me()
         rows: list[tuple] = []

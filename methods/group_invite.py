@@ -14,9 +14,8 @@ async def invite(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ) -> None:
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         user_entity = await client.get_entity(resolve_target(user))
         group_entity = await client.get_entity(resolve_target(group))

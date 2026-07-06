@@ -19,9 +19,8 @@ async def wait_for_message(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ):
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         found: "asyncio.Future" = asyncio.get_event_loop().create_future()
 

@@ -16,9 +16,8 @@ async def set_email(
     code_callback=input,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ) -> None:
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         purpose = EmailVerifyPurposeLoginChange()
         await client(SendVerifyEmailCodeRequest(purpose=purpose, email=email))

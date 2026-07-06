@@ -20,9 +20,8 @@ async def search_groups(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ) -> list[str]:
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         result = await client(SearchRequest(q=query, limit=50))
         lines = []

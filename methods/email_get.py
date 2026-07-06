@@ -13,9 +13,8 @@ async def get_email(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ) -> str | None:
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         password = await client(GetPasswordRequest())
         return password.login_email_pattern

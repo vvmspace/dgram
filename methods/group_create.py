@@ -14,9 +14,8 @@ async def create_group(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ):
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         result = await client(CreateChannelRequest(title=title, about="", megagroup=True))
         channel = result.chats[0]

@@ -18,9 +18,8 @@ async def join(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ) -> None:
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         invite_match = INVITE_HASH_RE.search(group)
         if invite_match:

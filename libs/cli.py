@@ -5,10 +5,9 @@ common to every account-facing command.
 For security, commands never hold a TelegramClient themselves: each
 `methods` function initialises its own via libs.dgram.get_client. This
 module merely turns parsed CLI arguments into the keyword arguments that
-call expects. An explicit, non-existent --path-to-tdata is treated as an
-error, since a tdata folder cannot be conjured up by logging in - but a
-missing --session (explicit or default) simply launches an interactive
-login, which then saves its session there.
+call expects - passing None through for whichever of --path-to-tdata and
+--session was left unspecified, so libs.dgram.get_client can tell an
+explicit choice apart from its own default.
 """
 
 import argparse
@@ -32,5 +31,4 @@ def client_kwargs(args: argparse.Namespace) -> dict:
     return {
         "tdata_path": args.path_to_tdata,
         "session_path": args.session,
-        "interactive": args.path_to_tdata is None,
     }

@@ -15,9 +15,8 @@ async def add_to_folder(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ) -> None:
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         result = await client(GetDialogFiltersRequest())
         folder = find_dialog_filter(result.filters, folder_ref)

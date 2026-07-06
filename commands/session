@@ -1,0 +1,30 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/session [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session]
+
+Prints information about the authenticated account and session.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from libs.cli import add_client_arguments, client_kwargs
+from methods.session import get_session_info
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    add_client_arguments(parser)
+    args = parser.parse_args()
+
+    for line in await get_session_info(**client_kwargs(args)):
+        print(line)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

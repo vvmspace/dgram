@@ -28,9 +28,8 @@ async def send_message(
     *,
     tdata_path: str | None = None,
     session_path: str | None = None,
-    interactive: bool = True,
 ):
-    client = await get_client(tdata_path, session_path, interactive)
+    client = await get_client(tdata_path, session_path)
     try:
         entity = await client.get_entity(resolve_target(target))
 
