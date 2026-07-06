@@ -51,6 +51,7 @@ Every account-facing command follows the very same shape: `commands/<name> [-p p
 | 🏗️ | `group_create [-p tdata] [-s .session] "Title" @username` | Creates a new public supergroup |
 | 🤝 | `group_invite [-p tdata] [-s .session] @user @group` | Invites a user into a group |
 | 🗑️ | `group_delete [-p tdata] [-s .session] @group` | Deletes a group |
+| 🧹 | `group_clean_joins [-p tdata] [-s .session] [-l length] @group` | Deletes up to length "User joined the group" service messages |
 | 🔍 | `search_groups [-p tdata] [-s .session] "query"` | Searches Telegram's own directory for public groups |
 | 📧 | `email_get [-p tdata] [-s .session]` | Gets the login-email setting (a masked pattern) |
 | 📨 | `email_set [-p tdata] [-s .session] you@example.com` | Sets the login-email setting, prompting for the confirmation code |

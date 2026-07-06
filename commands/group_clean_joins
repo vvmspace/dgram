@@ -1,0 +1,33 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/group_clean_joins [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] [-l 20/--length=20] @groupname
+
+Deletes up to length "User joined the group" service messages from the
+given group.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from libs.cli import add_client_arguments, client_kwargs
+from methods.group_clean_joins import clean_joins
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    add_client_arguments(parser)
+    parser.add_argument("-l", "--length", type=int, default=20, help="How many join messages to delete")
+    parser.add_argument("group", help="@groupname or the id of the group")
+    args = parser.parse_args()
+
+    deleted = await clean_joins(args.group, args.length, **client_kwargs(args))
+    print(f"Deleted {deleted} join message(s) from {args.group}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -15,6 +15,7 @@ Should the file [AGENTS.local.md] exist, treat it as the authoritative, up-to-da
 -- `group_create [-p tdata / --path-to-tdata=tdata] "Group name" @gr0upUs3rnam3` - `libs/dgram` -> creates a group, public @gr0upUs3rnam3
 -- `group_invite [-p tdata / --path-to-tdata=tdata] @username/id @groupname/id` - `libs/dgram` -> invites a user into the group
 -- `group_delete [-p tdata / --path-to-tdata=tdata] @gr0upUs3rnam3` - `libs/dgram` -> deletes the group
+-- `group_clean_joins [-p tdata / --path-to-tdata=tdata] [-l 20/--length=20] @groupname` - `libs/dgram` -> deletes up to length "User joined the group" service messages
 -- `search_groups [-p tdata / --path-to-tdata=tdata] "query"` - `libs/dgram` -> searches for groups by way of Telegram's own search
 -- `folders [-p tdata / --path-to-tdata=tdata]` - `libs/dgram` -> lists chat folders: id, title, include/exclude counts
 -- `folder [-p tdata / --path-to-tdata=tdata] <id|"Title">` - `libs/dgram` -> lists the chats within the given folder
