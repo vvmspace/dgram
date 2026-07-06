@@ -1,0 +1,31 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/email_get [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session]
+
+Prints the account's login-email setting (a masked pattern), or reports
+that none is set.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from libs.cli import add_client_arguments, client_kwargs
+from methods.email_get import get_email
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    add_client_arguments(parser)
+    args = parser.parse_args()
+
+    pattern = await get_email(**client_kwargs(args))
+    print(pattern if pattern else "No login email is set")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

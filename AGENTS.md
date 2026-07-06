@@ -20,6 +20,8 @@ Should the file [AGENTS.local.md] exist, treat it as the authoritative, up-to-da
 -- `folder [-p tdata / --path-to-tdata=tdata] <id|"Title">` - `libs/dgram` -> lists the chats within the given folder
 -- `folder_add [-p tdata / --path-to-tdata=tdata] <id|"Title"> @chat` - `libs/dgram` -> adds a chat to the folder's list
 -- `folder_remove [-p tdata / --path-to-tdata=tdata] <id|"Title"> @chat` - `libs/dgram` -> removes a chat from the folder's list
+-- `email_get [-p tdata / --path-to-tdata=tdata]` - `libs/dgram` -> gets the login-email setting (a masked pattern)
+-- `email_set [-p tdata / --path-to-tdata=tdata] you@example.com` - `libs/dgram` -> sets the login-email setting, prompting for the confirmation code
 
 -- `up` - brings up (recreates) the torproxy Docker container, publishing the SOCKS5 and control ports, with the control-port password (`libs/tor.CONTROL_PASSWORD`, shared with `switch`)
 -- `down` - stops and removes the torproxy Docker container; the volumes holding Tor's data are preserved
@@ -30,6 +32,6 @@ Should the file [AGENTS.local.md] exist, treat it as the authoritative, up-to-da
 
 ## Commands common parameters:
 
-- `[-p tdata / --path-to-tdata=tdata] [-s .session / --session=.session]` - an optional parameter giving the path to the tdata folder or to a session, each with the defaults shown. Order of checking: tdata -> .session. Where neither of these parameters is given and none of the default files exists, the user is invited to authenticate: `phone/email` -> `code` `[-> password, where 2FA is enabled]`. By default, `tdata` and `.session` are sought in the working directory.
+- `[-p tdata / --path-to-tdata=tdata] [-s .session / --session=.session]` - an optional parameter giving the path to the tdata folder or to a session, each with the defaults shown. Order of checking: tdata -> .session. Where `--path-to-tdata` is given explicitly and does not exist, this is an error. Otherwise, where `--session` (whether given explicitly, e.g. without `--path-to-tdata`, or left at its default) does not exist, the user is invited to authenticate: `phone/email` -> `code` `[-> password, where 2FA is enabled]`, and the resulting session is saved there. By default, `tdata` and `.session` are sought in the working directory.
 
 Language within the code: posh UK English only

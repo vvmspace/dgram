@@ -1,0 +1,32 @@
+#!/usr/bin/env -S uv run python
+"""
+commands/email_set [-p tdata/--path-to-tdata=tdata] [-s .session/--session=.session] you@example.com
+
+Sets, or changes, the account's login email, prompting for the
+confirmation code Telegram sends to that address.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import asyncio
+
+from libs.cli import add_client_arguments, client_kwargs
+from methods.email_set import set_email
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    add_client_arguments(parser)
+    parser.add_argument("email", help="New login email address")
+    args = parser.parse_args()
+
+    await set_email(args.email, **client_kwargs(args))
+    print(f"Login email set to {args.email}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -52,6 +52,8 @@ Every account-facing command follows the very same shape: `commands/<name> [-p p
 | 🤝 | `group_invite [-p tdata] [-s .session] @user @group` | Invites a user into a group |
 | 🗑️ | `group_delete [-p tdata] [-s .session] @group` | Deletes a group |
 | 🔍 | `search_groups [-p tdata] [-s .session] "query"` | Searches Telegram's own directory for public groups |
+| 📧 | `email_get [-p tdata] [-s .session]` | Gets the login-email setting (a masked pattern) |
+| 📨 | `email_set [-p tdata] [-s .session] you@example.com` | Sets the login-email setting, prompting for the confirmation code |
 | 🗂️ | `folders [-p tdata] [-s .session]` | Lists chat folders, with their include/exclude counts |
 | 📁 | `folder [-p tdata] [-s .session] <id\|"Title">` | Lists the chats within a given folder |
 | ➕ | `folder_add [-p tdata] [-s .session] <id\|"Title"> @chat` | Adds a chat to a folder's list |
